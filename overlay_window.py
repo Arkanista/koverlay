@@ -5,11 +5,12 @@ from PyQt6.QtGui import QColor, QPixmap, QPainter, QPen
 class OverlayWindow(QWidget):
     blink_finished = pyqtSignal()
 
-    def __init__(self, config, screen_name, screen_geometry, parent=None):
+    def __init__(self, config, overlay_id, screen_geometry, numeric_id, parent=None):
         super().__init__(parent)
         self.screen_geometry = screen_geometry
         self.config = config
-        self.screen_name = screen_name
+        self.overlay_id = str(overlay_id)
+        self.numeric_id = numeric_id
         self.move_mode = False
         self.is_blinking = False
         self.blink_count = 0
@@ -53,7 +54,7 @@ class OverlayWindow(QWidget):
         pixmap = QPixmap(icon_path).scaled(20, 20, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
         self.logo_label.setPixmap(pixmap)
         
-        self.title_label = QLabel("TS3 Overlay")
+        self.title_label = QLabel(f"TS3 Overlay - ID {self.numeric_id}")
         title_font = self.title_label.font()
         title_font.setBold(True)
         self.title_label.setFont(title_font)
@@ -80,7 +81,7 @@ class OverlayWindow(QWidget):
         self.setMinimumSize(50, 20)
         self.resize(200, 300)
         
-        mon_cfg = self.config.get("monitors", {}).get(self.screen_name, {})
+        mon_cfg = self.config.get("overlay_ids", {}).get(self.overlay_id, {})
         if "pos_x" in mon_cfg and "pos_y" in mon_cfg:
             self.move(mon_cfg["pos_x"], mon_cfg["pos_y"])
         else:
@@ -90,7 +91,7 @@ class OverlayWindow(QWidget):
         
     def showEvent(self, event):
         super().showEvent(event)
-        mon_cfg = self.config.get("monitors", {}).get(self.screen_name, {})
+        mon_cfg = self.config.get("overlay_ids", {}).get(self.overlay_id, {})
         if "pos_x" in mon_cfg and "pos_y" in mon_cfg:
             self.move(mon_cfg["pos_x"], mon_cfg["pos_y"])
         else:
@@ -147,14 +148,14 @@ class OverlayWindow(QWidget):
             flags |= Qt.WindowType.WindowTransparentForInput
             self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
             
-            # Save position when exiting move mode
-            if "monitors" not in self.config:
-                self.config["monitors"] = {}
-            if self.screen_name not in self.config["monitors"]:
-                self.config["monitors"][self.screen_name] = {}
+            # Save position when exiting move mode (backup)
+            if "overlay_ids" not in self.config:
+                self.config["overlay_ids"] = {}
+            if self.overlay_id not in self.config["overlay_ids"]:
+                self.config["overlay_ids"][self.overlay_id] = {}
                 
-            self.config["monitors"][self.screen_name]["pos_x"] = self.pos().x()
-            self.config["monitors"][self.screen_name]["pos_y"] = self.pos().y()
+            self.config["overlay_ids"][self.overlay_id]["pos_x"] = self.pos().x()
+            self.config["overlay_ids"][self.overlay_id]["pos_y"] = self.pos().y()
             if hasattr(self, 'save_callback'):
                 self.save_callback()
         else:
@@ -168,17 +169,25 @@ class OverlayWindow(QWidget):
         show_header = self.config.get("show_header", True)
         show_three_dots = self.config.get("show_three_dots", False)
         
-        self.header_widget.setVisible(show_header)
+        dots_str = "•" * self.numeric_id
+        self.icon_label.setText(dots_str)
         
-        if show_header:
-            if show_three_dots:
+        if show_header or show_three_dots:
+            self.header_widget.setVisible(True)
+            if not show_header and show_three_dots:
                 self.icon_label.setVisible(True)
                 self.logo_label.setVisible(False)
                 self.title_label.setVisible(False)
-            else:
+            elif show_header and not show_three_dots:
                 self.icon_label.setVisible(False)
                 self.logo_label.setVisible(True)
                 self.title_label.setVisible(True)
+            else:
+                self.icon_label.setVisible(True)
+                self.logo_label.setVisible(True)
+                self.title_label.setVisible(True)
+        else:
+            self.header_widget.setVisible(False)
         
         # Trigger a repaint
         self.update()
@@ -247,4 +256,17 @@ class OverlayWindow(QWidget):
             if hasattr(self, 'drag_start_pos') and hasattr(self, 'window_start_pos'):
                 delta = event.globalPosition().toPoint() - self.drag_start_pos
                 self.move(self.window_start_pos + delta)
+            event.accept()
+
+    def mouseReleaseEvent(self, event):
+        if self.move_mode and event.button() == Qt.MouseButton.LeftButton:
+            if "overlay_ids" not in self.config:
+                self.config["overlay_ids"] = {}
+            if self.overlay_id not in self.config["overlay_ids"]:
+                self.config["overlay_ids"][self.overlay_id] = {}
+                
+            self.config["overlay_ids"][self.overlay_id]["pos_x"] = self.pos().x()
+            self.config["overlay_ids"][self.overlay_id]["pos_y"] = self.pos().y()
+            if hasattr(self, 'save_callback'):
+                self.save_callback()
             event.accept()

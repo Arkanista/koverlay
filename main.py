@@ -23,13 +23,20 @@ class MainApp:
         # Load config
         self.cfg = config.load_config()
         
-        # Migrate legacy config to monitors dictionary
-        if "monitors" not in self.cfg:
-            self.cfg["monitors"] = {}
+        # Migrate legacy config to overlay_ids dictionary
+        if "overlay_ids" not in self.cfg:
+            self.cfg["overlay_ids"] = {}
             primary_screen = self.app.primaryScreen()
-            if primary_screen:
-                p_name = primary_screen.name()
-                self.cfg["monitors"][p_name] = {
+            
+            # Map existing monitors config if available
+            if "monitors" in self.cfg:
+                for i, screen in enumerate(self.app.screens(), start=1):
+                    s_name = screen.name()
+                    if s_name in self.cfg["monitors"]:
+                        self.cfg["overlay_ids"][str(i)] = self.cfg["monitors"][s_name]
+            else:
+                # Default for primary
+                self.cfg["overlay_ids"]["1"] = {
                     "enabled": True,
                     "pos_x": self.cfg.get("pos_x", 0),
                     "pos_y": self.cfg.get("pos_y", 0)
@@ -38,13 +45,12 @@ class MainApp:
         
         # Setup UI for multiple monitors
         self.overlays = {}
-        for screen in self.app.screens():
-            s_name = screen.name()
-            # If explicitly enabled, or it's the primary monitor and not explicitly disabled
-            mon_cfg = self.cfg["monitors"].get(s_name, {})
+        for index, screen in enumerate(self.app.screens(), start=1):
+            overlay_id = str(index)
+            mon_cfg = self.cfg["overlay_ids"].get(overlay_id, {})
             is_enabled = mon_cfg.get("enabled", False)
             if is_enabled:
-                overlay = OverlayWindow(self.cfg, s_name, screen.geometry())
+                overlay = OverlayWindow(self.cfg, overlay_id, screen.geometry(), index)
                 overlay.save_callback = self.save_config
                 overlay.setScreen(screen)
                 overlay.show()
@@ -120,10 +126,10 @@ class MainApp:
             overlay.deleteLater()
         self.overlays.clear()
         
-        for screen in self.app.screens():
-            s_name = screen.name()
-            if self.cfg["monitors"].get(s_name, {}).get("enabled", False):
-                overlay = OverlayWindow(self.cfg, s_name, screen.geometry())
+        for index, screen in enumerate(self.app.screens(), start=1):
+            overlay_id = str(index)
+            if self.cfg["overlay_ids"].get(overlay_id, {}).get("enabled", False):
+                overlay = OverlayWindow(self.cfg, overlay_id, screen.geometry(), index)
                 overlay.save_callback = self.save_config
                 overlay.blink_finished.connect(self.on_blink_finished)
                 
@@ -133,7 +139,7 @@ class MainApp:
                 
                 overlay.setScreen(screen)
                 overlay.show()
-                self.overlays[s_name] = overlay
+                self.overlays[overlay_id] = overlay
         
         # Restart TS3 thread with new key
         self.ts3_thread.stop()

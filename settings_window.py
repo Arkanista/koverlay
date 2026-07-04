@@ -30,14 +30,15 @@ class SettingsWindow(QDialog):
         self.monitors_group = QGroupBox("Monitor Layout & Overlays")
         monitors_layout = QVBoxLayout()
         self.monitor_checkboxes = {}
-        for screen in QGuiApplication.screens():
+        for index, screen in enumerate(QGuiApplication.screens(), start=1):
             s_name = screen.name()
             s_geom = screen.geometry()
-            mon_cfg = self.config.get("monitors", {}).get(s_name, {})
+            overlay_id = str(index)
+            mon_cfg = self.config.get("overlay_ids", {}).get(overlay_id, {})
             
-            cb = QCheckBox(f"{s_name} ({s_geom.width()}x{s_geom.height()})")
+            cb = QCheckBox(f"Overlay ID {overlay_id} on {s_name} ({s_geom.width()}x{s_geom.height()})")
             cb.setChecked(mon_cfg.get("enabled", False))
-            self.monitor_checkboxes[s_name] = cb
+            self.monitor_checkboxes[overlay_id] = cb
             monitors_layout.addWidget(cb)
             
         self.monitors_group.setLayout(monitors_layout)
@@ -95,18 +96,14 @@ class SettingsWindow(QDialog):
         layout.addLayout(color_layout)
 
         # Show Header Checkbox
-        self.header_checkbox = QCheckBox("Show Title Header")
+        self.header_checkbox = QCheckBox("Show Title Header (Logo + Text)")
         self.header_checkbox.setChecked(self.config.get("show_header", True))
         layout.addWidget(self.header_checkbox)
         
         # Show Three Dots Checkbox
-        self.three_dots_checkbox = QCheckBox("Show '•••' in header")
+        self.three_dots_checkbox = QCheckBox("Show Dots Indicator (Compact Mode)")
         self.three_dots_checkbox.setChecked(self.config.get("show_three_dots", False))
         layout.addWidget(self.three_dots_checkbox)
-        
-        # Connect to parent checkbox
-        self.header_checkbox.toggled.connect(self.three_dots_checkbox.setEnabled)
-        self.three_dots_checkbox.setEnabled(self.header_checkbox.isChecked())
         
         # Disable Blink
         self.disable_blink_checkbox = QCheckBox("Disable border blinking on startup")
@@ -142,12 +139,12 @@ class SettingsWindow(QDialog):
         new_config = copy.deepcopy(self.config)
         
         # Save monitors
-        if "monitors" not in new_config:
-            new_config["monitors"] = {}
-        for s_name, cb in self.monitor_checkboxes.items():
-            if s_name not in new_config["monitors"]:
-                new_config["monitors"][s_name] = {}
-            new_config["monitors"][s_name]["enabled"] = cb.isChecked()
+        if "overlay_ids" not in new_config:
+            new_config["overlay_ids"] = {}
+        for o_id, cb in self.monitor_checkboxes.items():
+            if o_id not in new_config["overlay_ids"]:
+                new_config["overlay_ids"][o_id] = {}
+            new_config["overlay_ids"][o_id]["enabled"] = cb.isChecked()
             
         new_config["api_key"] = self.api_key_input.text().strip()
         new_config["game_only"] = self.game_only_checkbox.isChecked()
