@@ -112,7 +112,7 @@ class TS3ClientThread(QThread):
                     clients = self._parse_clientlist(resp, filter_cid=my_cid)
                     self.clients_updated.emit(clients)
                 
-                time.sleep(0.5)
+                time.sleep(0.05)
 
             except Exception as e:
                 self.error_occurred.emit(f"Connection error: {e}")

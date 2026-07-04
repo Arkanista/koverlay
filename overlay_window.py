@@ -25,6 +25,8 @@ class OverlayWindow(QWidget):
             Qt.WindowType.WindowTransparentForInput
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         
         self.layout = QVBoxLayout()
         self.layout.setContentsMargins(10, 10, 10, 10)
@@ -76,6 +78,12 @@ class OverlayWindow(QWidget):
             
         self.update_style()
         
+    def showEvent(self, event):
+        super().showEvent(event)
+        # Force the position every time the window is shown to defeat X11/Wayland auto-centering
+        if "pos_x" in self.config and "pos_y" in self.config:
+            self.move(self.config["pos_x"], self.config["pos_y"])
+        
     def start_blink(self):
         self.is_blinking = True
         self.blink_count = 0
@@ -101,8 +109,10 @@ class OverlayWindow(QWidget):
         self.hide()
         if self.move_mode:
             self.setWindowFlag(Qt.WindowType.WindowTransparentForInput, False)
+            self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, False)
         else:
             self.setWindowFlag(Qt.WindowType.WindowTransparentForInput, True)
+            self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
             
             # Save position when exiting move mode
             self.config["pos_x"] = self.pos().x()
