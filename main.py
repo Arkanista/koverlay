@@ -43,18 +43,17 @@ class MainApp:
                 }
             config.save_config(self.cfg)
         
-        # Setup UI for multiple monitors
+        # Setup UI for multiple overlays
         self.overlays = {}
-        for index, screen in enumerate(self.app.screens(), start=1):
+        for index in range(1, 5):
             overlay_id = str(index)
             mon_cfg = self.cfg["overlay_ids"].get(overlay_id, {})
             is_enabled = mon_cfg.get("enabled", False)
             if is_enabled:
-                overlay = OverlayWindow(self.cfg, overlay_id, screen.geometry(), index)
+                overlay = OverlayWindow(self.cfg, overlay_id, index)
                 overlay.save_callback = self.save_config
-                overlay.setScreen(screen)
                 overlay.show()
-                self.overlays[s_name] = overlay
+                self.overlays[overlay_id] = overlay
         
         self.tray = TrayIcon()
         self.tray.show()
@@ -110,43 +109,43 @@ class MainApp:
             overlay.set_move_mode(True)
 
         self.settings_dialog = SettingsWindow(self.cfg)
-        self.settings_dialog.accepted.connect(self.on_settings_saved)
+        self.settings_dialog.config_changed.connect(self.on_settings_changed)
         self.settings_dialog.finished.connect(self.on_settings_closed)
         self.settings_dialog.setModal(False)
         self.settings_dialog.show()
 
-    def on_settings_saved(self):
-        new_cfg = self.settings_dialog.get_updated_config()
-        config.save_config(new_cfg)
-        self.cfg = new_cfg
+    def on_settings_changed(self):
+        config.save_config(self.cfg)
         
-        # Recreate overlays based on new enabled monitors
-        for overlay in self.overlays.values():
-            overlay.hide()
-            overlay.deleteLater()
-        self.overlays.clear()
-        
-        for index, screen in enumerate(self.app.screens(), start=1):
+        # Add or remove overlays based on checkboxes
+        for index in range(1, 5):
             overlay_id = str(index)
-            if self.cfg["overlay_ids"].get(overlay_id, {}).get("enabled", False):
-                overlay = OverlayWindow(self.cfg, overlay_id, screen.geometry(), index)
+            is_enabled = self.cfg["overlay_ids"].get(overlay_id, {}).get("enabled", False)
+            
+            if is_enabled and overlay_id not in self.overlays:
+                overlay = OverlayWindow(self.cfg, overlay_id, index)
                 overlay.save_callback = self.save_config
                 overlay.blink_finished.connect(self.on_blink_finished)
-                
-                # If settings is open, put it in move mode
-                if hasattr(self, 'settings_dialog') and self.settings_dialog is not None:
-                    overlay.set_move_mode(True)
-                
-                overlay.setScreen(screen)
-                overlay.show()
+                overlay.set_move_mode(True) # since settings is open
                 self.overlays[overlay_id] = overlay
+                
+            elif not is_enabled and overlay_id in self.overlays:
+                overlay = self.overlays[overlay_id]
+                overlay.hide()
+                overlay.deleteLater()
+                del self.overlays[overlay_id]
+                
+        # Update styling for all active overlays
+        for overlay in self.overlays.values():
+            overlay.update_style()
         
-        # Restart TS3 thread with new key
-        self.ts3_thread.stop()
-        self.ts3_thread = TS3ClientThread(self.cfg.get("api_key", ""))
-        self.ts3_thread.clients_updated.connect(self.on_clients_updated)
-        self.ts3_thread.error_occurred.connect(self.on_ts3_error)
-        self.ts3_thread.start()
+        # Check if API key changed
+        if self.ts3_thread.api_key != self.cfg.get("api_key", ""):
+            self.ts3_thread.stop()
+            self.ts3_thread = TS3ClientThread(self.cfg.get("api_key", ""))
+            self.ts3_thread.clients_updated.connect(self.on_clients_updated)
+            self.ts3_thread.error_occurred.connect(self.on_ts3_error)
+            self.ts3_thread.start()
         
     def on_settings_closed(self):
         self.settings_dialog = None
