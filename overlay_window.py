@@ -201,6 +201,8 @@ class OverlayWindow(QWidget):
                 
         for name in to_remove:
             del self.labels[name]
+        
+        self.adjustSize()
 
     # Mouse events for dragging when in move mode
     def mousePressEvent(self, event):

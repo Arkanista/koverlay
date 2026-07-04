@@ -65,6 +65,8 @@ class MainApp:
             self.settings_dialog.activateWindow()
             return
 
+        self.overlay.set_move_mode(True)
+
         self.settings_dialog = SettingsWindow(self.cfg)
         self.settings_dialog.accepted.connect(self.on_settings_saved)
         self.settings_dialog.finished.connect(self.on_settings_closed)
@@ -88,6 +90,7 @@ class MainApp:
         
     def on_settings_closed(self):
         self.settings_dialog = None
+        self.overlay.set_move_mode(False)
 
     def on_active_window_changed(self, is_target_active):
         # If moving, always show.
