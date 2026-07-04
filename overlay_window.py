@@ -78,7 +78,6 @@ class OverlayWindow(QWidget):
         self.blink_timer.timeout.connect(self._on_blink_tick)
         
         self.setMinimumSize(50, 20)
-        self.resize(200, 300)
         
         mon_cfg = self.config.get("overlay_ids", {}).get(self.overlay_id, {})
         if "pos_x" in mon_cfg and "pos_y" in mon_cfg:
@@ -207,12 +206,14 @@ class OverlayWindow(QWidget):
         fixed_width = self.config.get("fixed_width", 200)
         
         if dynamic_width:
+            self.layout.setSizeConstraint(QVBoxLayout.SizeConstraint.SetFixedSize)
             self.setMinimumWidth(50)
             self.setMaximumWidth(16777215)
-            self.adjustSize()
         else:
+            self.layout.setSizeConstraint(QVBoxLayout.SizeConstraint.SetDefaultConstraint)
+            self.setMinimumWidth(50)
+            self.setMaximumWidth(16777215)
             self.setFixedWidth(fixed_width)
-            self.adjustSize()
         
     def update_clients(self, clients):
         # Update existing or add new
@@ -255,7 +256,11 @@ class OverlayWindow(QWidget):
         for name in to_remove:
             del self.labels[name]
         
-        self.adjustSize()
+        if self.config.get("dynamic_width", True):
+            # Layout constraint will automatically resize the window
+            pass
+        else:
+            self.adjustSize()
 
     # Mouse events for dragging when in move mode
     def mousePressEvent(self, event):
