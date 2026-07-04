@@ -28,6 +28,27 @@ class SettingsWindow(QDialog):
         self.game_only_checkbox.toggled.connect(self._on_change)
         layout.addWidget(self.game_only_checkbox)
 
+        # Hide Delay
+        delay_layout = QHBoxLayout()
+        self.hide_delay_checkbox = QCheckBox("Delay hiding when EVE loses focus")
+        self.hide_delay_checkbox.setChecked(self.config.get("hide_delay_enabled", False))
+        self.hide_delay_checkbox.toggled.connect(self._on_change)
+        
+        self.hide_delay_slider = QSlider(Qt.Orientation.Horizontal)
+        self.hide_delay_slider.setRange(1, 60)
+        self.hide_delay_slider.setValue(self.config.get("hide_delay_seconds", 5))
+        self.hide_delay_val_label = QLabel(f"{self.hide_delay_slider.value()}s")
+        self.hide_delay_slider.valueChanged.connect(lambda v: self.hide_delay_val_label.setText(f"{v}s"))
+        self.hide_delay_slider.valueChanged.connect(self._on_change)
+        
+        self.hide_delay_slider.setEnabled(self.hide_delay_checkbox.isChecked())
+        self.hide_delay_checkbox.toggled.connect(self.hide_delay_slider.setEnabled)
+        
+        delay_layout.addWidget(self.hide_delay_checkbox)
+        delay_layout.addWidget(self.hide_delay_slider)
+        delay_layout.addWidget(self.hide_delay_val_label)
+        layout.addLayout(delay_layout)
+
         # Overlays
         self.monitors_group = QGroupBox("Overlays")
         monitors_layout = QVBoxLayout()
@@ -217,6 +238,8 @@ class SettingsWindow(QDialog):
             
         self.config["api_key"] = self.api_key_input.text().strip()
         self.config["game_only"] = self.game_only_checkbox.isChecked()
+        self.config["hide_delay_enabled"] = self.hide_delay_checkbox.isChecked()
+        self.config["hide_delay_seconds"] = self.hide_delay_slider.value()
         self.config["opacity_normal"] = self.opacity_normal_slider.value() / 100.0
         self.config["opacity_move"] = self.opacity_move_slider.value() / 100.0
         self.config["dynamic_width"] = self.dynamic_width_checkbox.isChecked()

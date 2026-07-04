@@ -1,6 +1,6 @@
 pkgname=koverlay
-pkgver=0.1.0
-pkgrel=2
+pkgver=0.1.1
+pkgrel=1
 pkgdesc="A modern, universal Wayland/X11 TeamSpeak 3 overlay."
 arch=('any')
 url="https://github.com/arkanis/koverlay" # Replace with actual URL if known

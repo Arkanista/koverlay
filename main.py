@@ -6,6 +6,7 @@ import os
 os.environ["QT_QPA_PLATFORM"] = "xcb"
 
 from PyQt6.QtWidgets import QApplication
+from PyQt6.QtCore import QTimer
 import config
 from settings_window import SettingsWindow
 from ts3_client import TS3ClientThread
@@ -17,6 +18,9 @@ class MainApp:
     def __init__(self):
         self.app = QApplication(sys.argv)
         self.app.setQuitOnLastWindowClosed(False)
+        self.hide_timer = QTimer()
+        self.hide_timer.setSingleShot(True)
+        self.hide_timer.timeout.connect(self._execute_hide)
         from PyQt6.QtGui import QIcon
         self.app.setWindowIcon(QIcon("icon.svg"))
         
@@ -153,21 +157,35 @@ class MainApp:
             overlay.set_move_mode(False)
 
     def on_active_window_changed(self, is_target_active):
+        game_only = self.cfg.get("game_only", True)
+        should_show = not game_only or is_target_active
+        
+        force_show = False
+        if hasattr(self, 'settings_dialog') and self.settings_dialog is not None:
+            force_show = True
+            
         for overlay in self.overlays.values():
-            # If moving, always show.
             if getattr(overlay, 'move_mode', False) or getattr(overlay, 'is_blinking', False):
-                overlay.show()
-                continue
+                force_show = True
                 
-            if hasattr(self, 'settings_dialog') and self.settings_dialog is not None:
+        if force_show or should_show:
+            self.hide_timer.stop()
+            for overlay in self.overlays.values():
                 overlay.show()
-                continue
-                
-            game_only = self.cfg.get("game_only", True)
-            if not game_only or is_target_active:
-                overlay.show()
+        else:
+            if self.cfg.get("hide_delay_enabled", False):
+                if not self.hide_timer.isActive():
+                    self.hide_timer.start(int(self.cfg.get("hide_delay_seconds", 5) * 1000))
             else:
-                overlay.hide()
+                self._execute_hide()
+
+    def _execute_hide(self):
+        for overlay in self.overlays.values():
+            if getattr(overlay, 'move_mode', False) or getattr(overlay, 'is_blinking', False):
+                continue
+            if hasattr(self, 'settings_dialog') and self.settings_dialog is not None:
+                continue
+            overlay.hide()
             
     def on_ts3_error(self, err_msg):
         # Just print for now, maybe add tray notification later
