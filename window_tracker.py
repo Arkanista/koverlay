@@ -7,8 +7,8 @@ class WindowTracker(QThread):
 
     def __init__(self, target_keywords=None, parent=None):
         super().__init__(parent)
-        # Usually EVE Online window contains "EVE"
-        self.target_keywords = target_keywords or ["EVE", "EVE Online"]
+        # Usually EVE Online window contains "EVE - " or "exefile.exe"
+        self.target_keywords = target_keywords or ["EVE - ", "exefile.exe"]
         self.running = True
         self.last_state = True
         self.kdotool_missing = False

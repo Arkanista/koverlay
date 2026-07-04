@@ -49,6 +49,15 @@ class SettingsWindow(QDialog):
         delay_layout.addWidget(self.hide_delay_val_label)
         layout.addLayout(delay_layout)
 
+        # Target Keywords
+        self.keywords_input = QLineEdit()
+        current_keywords = self.config.get("target_keywords", ["EVE - ", "exefile.exe"])
+        self.keywords_input.setText(", ".join(current_keywords))
+        self.keywords_input.setPlaceholderText("e.g. EVE - , exefile.exe")
+        self.keywords_input.editingFinished.connect(self._on_change)
+        layout.addWidget(QLabel("Target Window Keywords (comma separated):"))
+        layout.addWidget(self.keywords_input)
+        
         # Overlays
         self.monitors_group = QGroupBox("Overlays")
         monitors_layout = QVBoxLayout()
@@ -240,6 +249,7 @@ class SettingsWindow(QDialog):
         self.config["game_only"] = self.game_only_checkbox.isChecked()
         self.config["hide_delay_enabled"] = self.hide_delay_checkbox.isChecked()
         self.config["hide_delay_seconds"] = self.hide_delay_slider.value()
+        self.config["target_keywords"] = [k.strip() for k in self.keywords_input.text().split(",") if k.strip()]
         self.config["opacity_normal"] = self.opacity_normal_slider.value() / 100.0
         self.config["opacity_move"] = self.opacity_move_slider.value() / 100.0
         self.config["dynamic_width"] = self.dynamic_width_checkbox.isChecked()

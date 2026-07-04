@@ -16,9 +16,9 @@ For Arch-based systems, an official `PKGBUILD` and a compiled package are provid
 2. Build the package: `makepkg -si`
    *(This will automatically fetch required dependencies like `python-pyqt6` and the AUR package `kdotool`).*
 3. Or download and install the pre-compiled package directly via terminal: 
-   `sudo pacman -U https://github.com/Arkanista/koverlay/releases/download/v0.1.1/koverlay-0.1.1-1-any.pkg.tar.zst`
+   `sudo pacman -U https://github.com/Arkanista/koverlay/releases/download/v0.1.2/koverlay-0.1.2-1-any.pkg.tar.zst`
 4. **[Direct Download Link]** You can also download the package manually through your browser: 
-   👉 **[Download KOverlay v0.1.1 (.pkg.tar.zst)](https://github.com/Arkanista/koverlay/releases/download/v0.1.1/koverlay-0.1.1-1-any.pkg.tar.zst)**
+   👉 **[Download KOverlay v0.1.2 (.pkg.tar.zst)](https://github.com/Arkanista/koverlay/releases/download/v0.1.2/koverlay-0.1.2-1-any.pkg.tar.zst)**
 
 ### Ubuntu / Debian / Linux Mint / Fedora / openSUSE
 For other distributions, a robust, universal installer script is provided:
@@ -83,6 +83,7 @@ The *Settings* window offers highly advanced overlay customization. All options 
 ### Authorization and Game Section
 *   **TS3 API Key:** The unique authorization token from the ClientQuery plugin, described above. Essential for the program to function.
 *   **Show ONLY when EVE is active:** The overlay was designed for *EVE Online* pilots. If this option is checked, KOverlay will automatically monitor the system. The overlay will only appear when the *EVE Online* game window is on top and has focus. If you switch to a web browser or minimize the game, the window will discreetly disappear.
+*   **Target Window Keywords:** Allows you to define exactly what window names KOverlay should look for when deciding if the game is active. By default, it looks for `EVE - ` or `exefile.exe`. You can enter a comma-separated list of keywords. This prevents the overlay from activating when you browse an "EVE Online" forum in your browser.
 *   **Delay hiding when EVE loses focus:** Extends the above feature. If you alt-tab to a second monitor or another app, the overlay will stay visible for a configurable number of seconds (1 to 60) before fading away. If you return to the game within this time, the overlay remains visible continuously.
 
 ### Overlays Section
