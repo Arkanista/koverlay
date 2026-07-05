@@ -137,6 +137,8 @@ The *Settings* window offers highly advanced overlay customization. All options 
    * Activating this option freezes mouse communication with the game beneath the window frame, colors the KOverlay frame into a visible dashed line, and applies the "Move Mode" opacity.
    * In this mode, simply grab any of the enabled windows with the Left Mouse Button and move it freely to any corner of the monitor.
    * **To lock the positions**, simply uncheck `Move Overlays` in the tray menu. The overlays will instantly freeze, hide the auxiliary dashed edges, and resume ignoring mouse strikes, passing control directly back to the game client!
+   * > [!NOTE]
+   * > **Automatic Move Mode:** Opening the **Settings** window from the tray menu will also automatically force all active overlays into "Move Mode" for as long as the settings window remains open. Closing the settings window will revert the overlays to their previous locked state.
 
 2. **Mute TTS Voice (Checkbox):**
    * A quick toggle switch. Checking this option will instantly mute all voice announcements without changing your master settings. Perfect for temporarily silencing the bot without having to open the full Settings panel!
