@@ -286,11 +286,12 @@ class OverlayWindow(QWidget):
                         if self.config.get("tts_join_enabled", True):
                             template = self.config.get("tts_join_text", "%NICK joined")
                             text = template.replace("%NICK", name)
-                            delay = self.config.get("tts_delay_ms", 0)
-                            if delay == 0:
-                                self._play_tts(text)
-                            else:
-                                QTimer.singleShot(delay, lambda t=text: self._play_tts(t))
+                            delay = self.config.get("tts_delay_ms", 0) / 1000.0
+                            voice = self.config.get("tts_voice", "en-US-AriaNeural")
+                            rate = self.config.get("tts_rate", "+0%")
+                            vol = self.config.get("tts_volume", 80)
+                            from tts_manager import get_tts_manager
+                            get_tts_manager().enqueue(text, voice=voice, volume=vol, delay=delay, rate=rate)
                 else:
                     # User is known, if they previously left, they are back
                     if self.user_history[name]["leave_time"] is not None:
@@ -301,11 +302,12 @@ class OverlayWindow(QWidget):
                             if self.config.get("tts_join_enabled", True):
                                 template = self.config.get("tts_join_text", "%NICK joined")
                                 text = template.replace("%NICK", name)
-                                delay = self.config.get("tts_delay_ms", 0)
-                                if delay == 0:
-                                    self._play_tts(text)
-                                else:
-                                    QTimer.singleShot(delay, lambda t=text: self._play_tts(t))
+                                delay = self.config.get("tts_delay_ms", 0) / 1000.0
+                                voice = self.config.get("tts_voice", "en-US-AriaNeural")
+                                rate = self.config.get("tts_rate", "+0%")
+                                vol = self.config.get("tts_volume", 80)
+                                from tts_manager import get_tts_manager
+                                get_tts_manager().enqueue(text, voice=voice, volume=vol, delay=delay, rate=rate)
             
             # Mark users who left
             for name, data in list(self.user_history.items()):
@@ -318,11 +320,12 @@ class OverlayWindow(QWidget):
                             if self.config.get("tts_leave_enabled", False):
                                 template = self.config.get("tts_leave_text", "%NICK left")
                                 text = template.replace("%NICK", name)
-                                delay = self.config.get("tts_delay_ms", 0)
-                                if delay == 0:
-                                    self._play_tts(text)
-                                else:
-                                    QTimer.singleShot(delay, lambda t=text: self._play_tts(t))
+                                delay = self.config.get("tts_delay_ms", 0) / 1000.0
+                                voice = self.config.get("tts_voice", "en-US-AriaNeural")
+                                rate = self.config.get("tts_rate", "+0%")
+                                vol = self.config.get("tts_volume", 80)
+                                from tts_manager import get_tts_manager
+                                get_tts_manager().enqueue(text, voice=voice, volume=vol, delay=delay, rate=rate)
                     elif current_time - data["leave_time"] > history_duration:
                         # User left longer than history_duration, remove from history
                         del self.user_history[name]
@@ -438,54 +441,3 @@ class OverlayWindow(QWidget):
             if hasattr(self, 'save_callback'):
                 self.save_callback()
             event.accept()
-
-    def _play_tts(self, text):
-        import subprocess
-        import shutil
-        import tempfile
-        import os
-        import threading
-        import hashlib
-        
-        if self.config.get("tts_enabled", False):
-            # Safe text for caching and TTS pronunciation
-            safe_text = "".join(c for c in text if c.isalnum() or c in " _-.")
-            filename = hashlib.md5(safe_text.encode()).hexdigest() + ".mp3"
-            tmp_file = os.path.join(tempfile.gettempdir(), f"koverlay_{filename}")
-
-            import importlib.util
-            import sys
-            edge_tts_installed = importlib.util.find_spec("edge_tts") is not None
-
-            if edge_tts_installed and shutil.which("mpv"):
-                def run_edge_tts():
-                    try:
-                        voice = self.config.get("tts_voice", "en-US-AriaNeural")
-                        # Cache the generated voice per text and voice to save network requests & time
-                        cache_key = safe_text + "_" + voice
-                        filename = hashlib.md5(cache_key.encode()).hexdigest() + ".mp3"
-                        tmp_file = os.path.join(tempfile.gettempdir(), f"koverlay_{filename}")
-                        
-                        if not os.path.exists(tmp_file):
-                            import edge_tts
-                            import asyncio
-                            communicate = edge_tts.Communicate(safe_text, voice)
-                            asyncio.run(communicate.save(tmp_file))
-                            
-                        vol = self.config.get("tts_volume", 80)
-                        subprocess.Popen(["mpv", "--no-video", "--really-quiet", f"--volume={vol}", tmp_file], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                    except Exception as e:
-                        pass
-                # Run network request in background to prevent overlay freeze
-                threading.Thread(target=run_edge_tts, daemon=True).start()
-                
-            elif shutil.which("espeak"):
-                voice = self.config.get("tts_voice", "en-US-AriaNeural")
-                lang = voice.split("-")[0] # e.g. en, pl, de
-                vol = int(self.config.get("tts_volume", 80) * 2) # espeak scale is 0 to 200, default 100
-                subprocess.Popen(["espeak", "-a", str(vol), "-v", lang, safe_text], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            elif shutil.which("spd-say"):
-                voice = self.config.get("tts_voice", "en-US-AriaNeural")
-                lang = voice.split("-")[0] # e.g. en, pl, de
-                vol = int((self.config.get("tts_volume", 80) - 50) * 2) # spd-say is -100 to +100
-                subprocess.Popen(["spd-say", "-y", str(vol), "-l", lang, safe_text], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)

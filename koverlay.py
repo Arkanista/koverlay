@@ -48,17 +48,22 @@ class MainApp:
         self.hide_timer = QTimer()
         self.hide_timer.setSingleShot(True)
         self.hide_timer.timeout.connect(self._execute_hide)
+        
         from PyQt6.QtGui import QIcon
         import os
         icon_path = os.path.join(os.path.dirname(__file__), "icon.png")
         self.app.setWindowIcon(QIcon(icon_path))
         
         # Load config
+        self.cfg_path = os.path.join(os.path.dirname(__file__), "config.json")
         self.cfg = config.load_config()
+        
+        # Initialize TTS Manager early to start the worker thread
+        from tts_manager import get_tts_manager
+        get_tts_manager(self.cfg)
         
         # Migrate legacy config to overlay_ids dictionary
         if "overlay_ids" not in self.cfg:
-            self.cfg["overlay_ids"] = {}
             primary_screen = self.app.primaryScreen()
             
             # Map existing monitors config if available
@@ -266,6 +271,8 @@ class MainApp:
         print(err_msg)
 
     def quit(self):
+        from tts_manager import get_tts_manager
+        get_tts_manager().stop()
         self.ts3_thread.stop()
         self.tracker.stop()
         self.app.quit()

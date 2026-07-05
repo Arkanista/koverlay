@@ -121,9 +121,12 @@ The *Settings* window offers highly advanced overlay customization. All options 
     * *Requires active internet connection for the high-quality voice.*
     * *Requires the `edge-tts` python module and the `mpv` video player to be installed on your Linux system. (These are installed automatically via our universal installers).*
 *   **TTS Voice / Language:** Allows you to select the voice persona. Currently supports highly realistic voices: **English Female (Aria)** and **Polish Female (Zofia)**. You can easily test how they sound by clicking the "Test" button!
+*   **TTS Speed Control:** Adjust the reading speed from `-50%` to `+100%`. Fast speeds are perfectly supported!
 *   **TTS Phrase for Join / Leave:** Allows you to completely customize what the voice says. Use the special variable `%NICK` to place the user's name in the sentence. For example, typing `%NICK arrived on the battlefield` will cause the bot to say exactly that!
 *   **Read Delay:** Defines a delay (up to 3 seconds) before the TTS voice speaks, preventing overlaps with standard TS3 joining sounds.
 *   **Volume:** Slider to independently control the loudness of the TTS announcements (0% to 100%).
+*   **TTS Queueing:** Announcements are safely queued and played seamlessly one after another without overlapping. We use hardware-accelerated silence removal to ensure perfect, gapless playback when multiple people join at once!
+*   **TTS Persistent Cache:** KOverlay smartly caches generated speech files locally in a human-readable format to avoid unnecessary network calls. You can view the cache size, open the cache folder, clear it manually, or configure the **Auto-clear** feature to automatically delete audio files older than a specified number of days.
 
 ---
 

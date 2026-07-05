@@ -1,6 +1,6 @@
-from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel, QLineEdit, QPushButton, QHBoxLayout, QSlider, QCheckBox, QFontComboBox, QSpinBox, QColorDialog, QGroupBox, QComboBox, QScrollArea, QWidget
-from PyQt6.QtCore import Qt, pyqtSignal, QObject, QEvent, QRegularExpression
-from PyQt6.QtGui import QColor, QFont, QRegularExpressionValidator
+from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel, QLineEdit, QPushButton, QHBoxLayout, QSlider, QCheckBox, QFontComboBox, QSpinBox, QColorDialog, QGroupBox, QComboBox, QScrollArea, QWidget, QMessageBox
+from PyQt6.QtCore import Qt, pyqtSignal, QObject, QEvent, QRegularExpression, QUrl
+from PyQt6.QtGui import QColor, QFont, QRegularExpressionValidator, QDesktopServices
 
 class ScrollFilter(QObject):
     def eventFilter(self, obj, event):
@@ -312,6 +312,28 @@ class SettingsWindow(QDialog):
         
         tts_voice_layout.addWidget(self.tts_voice_combo)
         
+        tts_voice_layout.addWidget(QLabel("Speed:"))
+        self.tts_rate_combo = QComboBox()
+        self.tts_rates = [
+            ("Slow (-25%)", "-25%"),
+            ("Normal", "+0%"),
+            ("Fast (+25%)", "+25%"),
+            ("Very Fast (+50%)", "+50%")
+        ]
+        for label, val in self.tts_rates:
+            self.tts_rate_combo.addItem(label, val)
+            
+        current_rate = self.config.get("tts_rate", "+0%")
+        idx = self.tts_rate_combo.findData(current_rate)
+        if idx >= 0:
+            self.tts_rate_combo.setCurrentIndex(idx)
+            
+        self.tts_rate_combo.currentIndexChanged.connect(self._on_change)
+        self.tts_rate_combo.setEnabled(self.tts_checkbox.isChecked())
+        self.tts_checkbox.toggled.connect(self.tts_rate_combo.setEnabled)
+        
+        tts_voice_layout.addWidget(self.tts_rate_combo)
+        
         self.tts_test_btn = QPushButton("Test")
         self.tts_test_btn.setFixedWidth(60)
         self.tts_test_btn.clicked.connect(self._test_voice)
@@ -346,6 +368,49 @@ class SettingsWindow(QDialog):
         tts_sliders_layout.addWidget(self.tts_vol_slider)
         tts_sliders_layout.addWidget(self.tts_vol_val_label)
         tts_layout.addLayout(tts_sliders_layout)
+        
+        # Cache controls
+        tts_cache_layout = QHBoxLayout()
+        from tts_manager import get_tts_manager
+        tts_manager = get_tts_manager()
+        size_mb = tts_manager.get_cache_size()
+        
+        self.cache_size_label = QLabel(f"Cache size: {size_mb:.2f} MB")
+        self.cache_size_label.setFixedWidth(140)
+        tts_cache_layout.addWidget(self.cache_size_label)
+        
+        self.cache_retention_checkbox = QCheckBox("Auto-clear older than:")
+        retention_days = self.config.get("tts_cache_retention_days", 30)
+        self.cache_retention_checkbox.setChecked(retention_days > 0)
+        self.cache_retention_checkbox.toggled.connect(self._on_change)
+        tts_cache_layout.addWidget(self.cache_retention_checkbox)
+        
+        self.cache_retention_spin = QSpinBox()
+        self.cache_retention_spin.setRange(1, 365)
+        self.cache_retention_spin.setValue(retention_days if retention_days > 0 else 30)
+        self.cache_retention_spin.setSuffix(" days")
+        self.cache_retention_spin.setEnabled(self.cache_retention_checkbox.isChecked())
+        self.cache_retention_spin.valueChanged.connect(self._on_change)
+        self.cache_retention_checkbox.toggled.connect(self.cache_retention_spin.setEnabled)
+        tts_cache_layout.addWidget(self.cache_retention_spin)
+        
+        tts_cache_layout.addStretch()
+        
+        self.clear_cache_btn = QPushButton("Clear Cache")
+        self.clear_cache_btn.clicked.connect(self._clear_tts_cache)
+        tts_cache_layout.addWidget(self.clear_cache_btn)
+        
+        self.open_cache_btn = QPushButton("Open Folder")
+        self.open_cache_btn.clicked.connect(self._open_cache_folder)
+        tts_cache_layout.addWidget(self.open_cache_btn)
+        
+        tts_layout.addLayout(tts_cache_layout)
+        
+        # Path label
+        import os
+        cache_path = os.path.expanduser("~/.cache/ts3-overlay/tts_cache")
+        path_label = QLabel(f"<span style='color: gray; font-size: 10px;'>Path: {cache_path}</span>")
+        tts_layout.addWidget(path_label)
         
         self.tts_group.setLayout(tts_layout)
         layout.addWidget(self.tts_group)
@@ -607,8 +672,15 @@ class SettingsWindow(QDialog):
             self.config["tts_leave_enabled"] = self.tts_leave_checkbox.isChecked()
             self.config["tts_leave_text"] = self.tts_leave_text.text()
         self.config["tts_voice"] = self.tts_voice_combo.currentData()
+        self.config["tts_rate"] = self.tts_rate_combo.currentData()
         self.config["tts_delay_ms"] = self.tts_delay_slider.value()
         self.config["tts_volume"] = self.tts_vol_slider.value()
+        
+        if self.cache_retention_checkbox.isChecked():
+            self.config["tts_cache_retention_days"] = self.cache_retention_spin.value()
+        else:
+            self.config["tts_cache_retention_days"] = 0
+            
         self.config["history_duration"] = self.history_dur_slider.value()
         
         # Emit signal to inform main app to apply changes
@@ -625,9 +697,7 @@ class SettingsWindow(QDialog):
         
         voice = self.tts_voice_combo.currentData()
         vol = self.tts_vol_slider.value()
-        
-        import importlib.util
-        edge_tts_installed = importlib.util.find_spec("edge_tts") is not None
+        rate = self.tts_rate_combo.currentData()
         
         join_txt = getattr(self, "tts_join_text", None)
         leave_txt = getattr(self, "tts_leave_text", None)
@@ -636,32 +706,34 @@ class SettingsWindow(QDialog):
         test_name = "Arkanis"
         custom_text = f"{j_t.replace('%NICK', test_name)}. {l_t.replace('%NICK', test_name)}."
         
-        if edge_tts_installed and shutil.which("mpv"):
-            def run_edge_tts():
-                try:
-                    text = custom_text
-                    safe_text = "".join(c for c in text if c.isalnum() or c in " _-.")
-                    cache_key = "test_msg_" + safe_text + "_" + voice
-                    filename = hashlib.md5(cache_key.encode()).hexdigest() + ".mp3"
-                    tmp_file = os.path.join(tempfile.gettempdir(), f"koverlay_{filename}")
-                    
-                    if not os.path.exists(tmp_file):
-                        import edge_tts
-                        import asyncio
-                        communicate = edge_tts.Communicate(text, voice)
-                        asyncio.run(communicate.save(tmp_file))
-                        
-                    subprocess.Popen(["mpv", "--no-video", "--really-quiet", f"--volume={vol}", tmp_file], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                except Exception as e:
-                    pass
-            threading.Thread(target=run_edge_tts, daemon=True).start()
-        elif shutil.which("espeak"):
-            lang = voice.split("-")[0]
-            text = custom_text
-            vol_val = int(vol * 2)
-            subprocess.Popen(["espeak", "-a", str(vol_val), "-v", lang, text], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        elif shutil.which("spd-say"):
-            lang = voice.split("-")[0]
-            text = custom_text
-            vol_val = int((vol - 50) * 2)
-            subprocess.Popen(["spd-say", "-y", str(vol_val), "-l", lang, text], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        from tts_manager import get_tts_manager
+        get_tts_manager().enqueue(custom_text, voice=voice, volume=vol, delay=0, rate=rate)
+        
+        # Update cache size label after test (give worker time to download)
+        from PyQt6.QtCore import QTimer
+        def update_cache():
+            size_mb = get_tts_manager().get_cache_size()
+            self.cache_size_label.setText(f"Cache size: {size_mb:.2f} MB")
+        QTimer.singleShot(2000, update_cache)
+
+    def _open_cache_folder(self):
+        import os
+        cache_path = os.path.expanduser("~/.cache/ts3-overlay/tts_cache")
+        os.makedirs(cache_path, exist_ok=True)
+        QDesktopServices.openUrl(QUrl.fromLocalFile(cache_path))
+
+    def _clear_tts_cache(self):
+        reply = QMessageBox.question(
+            self, "Clear Cache", 
+            "Are you sure you want to delete all cached TTS audio files?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+        if reply == QMessageBox.StandardButton.Yes:
+            from tts_manager import get_tts_manager
+            mgr = get_tts_manager()
+            if mgr.clear_cache():
+                self.cache_size_label.setText("Cache size: 0.00 MB")
+                QMessageBox.information(self, "Success", "Cache cleared successfully.")
+            else:
+                QMessageBox.warning(self, "Error", "Failed to clear cache.")
