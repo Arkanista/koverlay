@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel, QLineEdit, QPushButton, QHBoxLayout, QSlider, QCheckBox, QFontComboBox, QSpinBox, QColorDialog, QGroupBox, QComboBox
+from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel, QLineEdit, QPushButton, QHBoxLayout, QSlider, QCheckBox, QFontComboBox, QSpinBox, QColorDialog, QGroupBox, QComboBox, QScrollArea, QWidget
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QColor, QFont
 
@@ -8,11 +8,20 @@ class SettingsWindow(QDialog):
     def __init__(self, current_config, parent=None):
         super().__init__(parent)
         self.setWindowTitle("KOverlay Settings")
-        self.setMinimumWidth(400)
+        self.setFixedWidth(1000)
+        self.setMaximumHeight(768)
         
         self.config = current_config
         
-        layout = QVBoxLayout()
+        self.main_layout = QVBoxLayout(self)
+        self.main_layout.setContentsMargins(0, 0, 0, 0)
+        
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setFrameShape(QScrollArea.Shape.NoFrame)
+        
+        self.container_widget = QWidget()
+        layout = QVBoxLayout(self.container_widget)
         
         # API Key
         self.api_key_input = QLineEdit()
@@ -394,7 +403,11 @@ class SettingsWindow(QDialog):
         
         layout.addStretch()
         layout.addLayout(button_layout)
-        self.setLayout(layout)
+        
+        self.scroll_area.setWidget(self.container_widget)
+        self.main_layout.addWidget(self.scroll_area)
+        
+        self.resize(1000, min(self.container_widget.sizeHint().height() + 20, 768))
         
     def _update_opacity_normal_label(self, val):
         self.opacity_normal_val_label.setText(f"{val}%")
