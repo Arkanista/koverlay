@@ -1,6 +1,14 @@
 from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel, QLineEdit, QPushButton, QHBoxLayout, QSlider, QCheckBox, QFontComboBox, QSpinBox, QColorDialog, QGroupBox, QComboBox, QScrollArea, QWidget
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import Qt, pyqtSignal, QObject, QEvent
 from PyQt6.QtGui import QColor, QFont
+
+class ScrollFilter(QObject):
+    def eventFilter(self, obj, event):
+        if event.type() == QEvent.Type.Wheel:
+            if not obj.hasFocus():
+                event.ignore()
+                return True
+        return super().eventFilter(obj, event)
 
 class SettingsWindow(QDialog):
     config_changed = pyqtSignal()
@@ -31,14 +39,13 @@ class SettingsWindow(QDialog):
         layout.addWidget(QLabel("TS3 API Key:"))
         layout.addWidget(self.api_key_input)
         
-        # Show Only in Game
+        # Show Only in Game & Hide Delay
+        delay_layout = QHBoxLayout()
         self.game_only_checkbox = QCheckBox("Show ONLY when game is active")
         self.game_only_checkbox.setChecked(self.config.get("game_only", True))
         self.game_only_checkbox.toggled.connect(self._on_change)
-        layout.addWidget(self.game_only_checkbox)
+        delay_layout.addWidget(self.game_only_checkbox)
 
-        # Hide Delay
-        delay_layout = QHBoxLayout()
         self.hide_delay_checkbox = QCheckBox("Delay hiding when game loses focus")
         self.hide_delay_checkbox.setChecked(self.config.get("hide_delay_enabled", False))
         self.hide_delay_checkbox.toggled.connect(self._on_change)
@@ -160,7 +167,7 @@ class SettingsWindow(QDialog):
         info_label.setWordWrap(True)
         tts_layout.addWidget(info_label)
         
-        tts_delay_layout = QHBoxLayout()
+        tts_sliders_layout = QHBoxLayout()
         self.tts_delay_label = QLabel("Read Delay:")
         self.tts_delay_slider = QSlider(Qt.Orientation.Horizontal)
         self.tts_delay_slider.setMinimum(0)
@@ -190,10 +197,9 @@ class SettingsWindow(QDialog):
         self.tts_delay_slider.setEnabled(self.tts_checkbox.isChecked())
         self.tts_checkbox.toggled.connect(self.tts_delay_slider.setEnabled)
         
-        tts_delay_layout.addWidget(self.tts_delay_label)
-        tts_delay_layout.addWidget(self.tts_delay_slider)
-        tts_delay_layout.addWidget(self.tts_delay_val_label)
-        tts_layout.addLayout(tts_delay_layout)
+        tts_sliders_layout.addWidget(self.tts_delay_label)
+        tts_sliders_layout.addWidget(self.tts_delay_slider)
+        tts_sliders_layout.addWidget(self.tts_delay_val_label)
         
         # Voice selection
         tts_voice_layout = QHBoxLayout()
@@ -233,7 +239,6 @@ class SettingsWindow(QDialog):
         
         tts_layout.addLayout(tts_voice_layout)
         
-        tts_vol_layout = QHBoxLayout()
         self.tts_vol_label = QLabel("Volume:")
         self.tts_vol_slider = QSlider(Qt.Orientation.Horizontal)
         self.tts_vol_slider.setMinimum(0)
@@ -254,17 +259,17 @@ class SettingsWindow(QDialog):
         self.tts_vol_slider.setEnabled(self.tts_checkbox.isChecked())
         self.tts_checkbox.toggled.connect(self.tts_vol_slider.setEnabled)
         
-        tts_vol_layout.addWidget(self.tts_vol_label)
-        tts_vol_layout.addWidget(self.tts_vol_slider)
-        tts_vol_layout.addWidget(self.tts_vol_val_label)
-        tts_layout.addLayout(tts_vol_layout)
+        tts_sliders_layout.addWidget(self.tts_vol_label)
+        tts_sliders_layout.addWidget(self.tts_vol_slider)
+        tts_sliders_layout.addWidget(self.tts_vol_val_label)
+        tts_layout.addLayout(tts_sliders_layout)
         
         self.tts_group.setLayout(tts_layout)
         layout.addWidget(self.tts_group)
         
         # Overlays
         self.monitors_group = QGroupBox("Overlays")
-        monitors_layout = QVBoxLayout()
+        monitors_layout = QHBoxLayout()
         self.monitor_checkboxes = {}
         for index in range(1, 5):
             overlay_id = str(index)
@@ -378,23 +383,24 @@ class SettingsWindow(QDialog):
         
         layout.addLayout(color_layout)
 
-        # Show Header Checkbox
+        # Misc Settings
+        misc_layout = QHBoxLayout()
         self.header_checkbox = QCheckBox("Show Title Header (Logo + Text)")
         self.header_checkbox.setChecked(self.config.get("show_header", True))
         self.header_checkbox.toggled.connect(self._on_change)
-        layout.addWidget(self.header_checkbox)
+        misc_layout.addWidget(self.header_checkbox)
         
-        # Show Three Dots Checkbox
         self.three_dots_checkbox = QCheckBox("Show Dots Indicator (number of dots indicates ID number of overlay)")
         self.three_dots_checkbox.setChecked(self.config.get("show_three_dots", False))
         self.three_dots_checkbox.toggled.connect(self._on_change)
-        layout.addWidget(self.three_dots_checkbox)
+        misc_layout.addWidget(self.three_dots_checkbox)
         
-        # Disable Blink
         self.disable_blink_checkbox = QCheckBox("Disable border blinking on startup")
         self.disable_blink_checkbox.setChecked(self.config.get("disable_blink", False))
         self.disable_blink_checkbox.toggled.connect(self._on_change)
-        layout.addWidget(self.disable_blink_checkbox)
+        misc_layout.addWidget(self.disable_blink_checkbox)
+        
+        layout.addLayout(misc_layout)
         
         button_layout = QHBoxLayout()
         self.save_btn = QPushButton("Close")
@@ -408,6 +414,14 @@ class SettingsWindow(QDialog):
         self.main_layout.addWidget(self.scroll_area)
         
         self.resize(1000, min(self.container_widget.sizeHint().height() + 20, 768))
+        
+        # Prevent accidental scrolling changes
+        self.scroll_filter = ScrollFilter(self)
+        for child in self.container_widget.findChildren(QWidget):
+            if isinstance(child, (QSlider, QSpinBox, QComboBox)):
+                child.installEventFilter(self.scroll_filter)
+                # Only allow wheel scroll when the user specifically clicks and focuses on the widget
+                child.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         
     def _update_opacity_normal_label(self, val):
         self.opacity_normal_val_label.setText(f"{val}%")
