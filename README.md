@@ -85,8 +85,8 @@ The *Settings* window offers highly advanced overlay customization. All options 
 *   **Show ONLY when game is active:** If this option is checked, KOverlay will automatically monitor the system. The overlay will only appear when your target game/application window is on top and has focus. If you switch to a web browser or minimize the game, the window will discreetly disappear.
     * > [!IMPORTANT]
     * > **Fullscreen vs. Borderless Windowed (Linux specific)**
-    * > For KOverlay (or any other overlay) to render correctly on top of your game on Linux (X11 & Wayland), you must set the game's display mode to **"Borderless Windowed" (Pełny ekran w oknie)** or **"Windowed"**. 
-    * > If you use "Exclusive Fullscreen" (Tradycyjny pełny ekran), the display server gives the game physical and exclusive access to the GPU (unredirection) to maximize FPS, which physically blocks all other windows from drawing on top of it, causing the overlay to be hidden beneath the game.
+    * > For KOverlay (or any other overlay) to render correctly on top of your game on Linux (X11 & Wayland), you must set the game's display mode to **"Borderless Windowed"** or **"Windowed"**. 
+    * > If you use **"Exclusive Fullscreen"**, the display server gives the game physical and exclusive access to the GPU (unredirection) to maximize FPS, which physically blocks all other windows from drawing on top of it, causing the overlay to be hidden beneath the game.
 *   **Delay hiding when game loses focus:** Extends the above feature. If you alt-tab to a second monitor or another app, the overlay will stay visible for a configurable number of seconds (1 to 60) before fading away. If you return to the game within this time, the overlay remains visible continuously.
 
 ### Overlays Section
