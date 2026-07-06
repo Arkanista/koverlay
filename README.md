@@ -10,14 +10,37 @@ Welcome to **KOverlay** – a powerful, modern overlay for Linux (X11 and Waylan
 KOverlay supports major Linux distributions natively and provides automated tools for deployment.
 
 ### Arch Linux / CachyOS / Manjaro
-For Arch-based systems, an official `PKGBUILD` and a compiled package are provided for clean system integration:
-1. Open a terminal in the KOverlay directory.
-2. Build the package: `makepkg -si`
-   *(This will automatically fetch required dependencies like `python-pyqt6` and the AUR package `kdotool`).*
-3. Or download the package manually through your browser: 
-   👉 **[Download KOverlay v0.1.13 (.pkg.tar.zst)](https://github.com/Arkanista/koverlay/releases/download/v0.1.13/koverlay-0.1.13-1-any.pkg.tar.zst)**
-4. Install the pre-compiled package directly via terminal: 
-   `sudo pacman -U koverlay-0.1.13-1-any.pkg.tar.zst`
+
+For Arch-based systems, an official `PKGBUILD` and a pre-compiled package are provided for clean system integration.
+
+#### Method A: Build and Install from Source (Recommended)
+Building from source automatically handles dependency resolution, including AUR packages:
+1. Open a terminal in the cloned `koverlay` directory.
+2. Build and install using the following commands:
+   ```bash
+   # Install dependencies from official repositories
+   sudo pacman -S --needed python python-pyqt6 qt6-svg mpv xdotool
+   
+   # Install kdotool from the AUR (required for active window tracking on Wayland)
+   yay -S kdotool   # or: paru -S kdotool
+   
+   # Build and install the koverlay package
+   makepkg -si
+   ```
+
+#### Method B: Install the Pre-compiled Pacman Package
+1. Download the pre-compiled package from GitHub releases:
+   👉 **[Download KOverlay v0.1.13-2 (.pkg.tar.zst)](https://github.com/Arkanista/koverlay/releases/download/v0.1.13/koverlay-0.1.13-2-any.pkg.tar.zst)**
+2. **Important Note on Dependencies**: The package depends on `kdotool` (which is in the AUR). Standard `pacman` cannot automatically resolve or download AUR dependencies. You must install `kdotool` first:
+   ```bash
+   yay -S kdotool   # or: paru -S kdotool
+   ```
+3. Install the downloaded package:
+   ```bash
+   sudo pacman -U koverlay-0.1.13-2-any.pkg.tar.zst
+   # Alternatively, let your AUR helper resolve dependencies and install the local package:
+   yay -U koverlay-0.1.13-2-any.pkg.tar.zst
+   ```
 
 ### Ubuntu / Debian / Linux Mint / Fedora / openSUSE
 For other distributions, a robust, universal installer script is provided:

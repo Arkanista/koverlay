@@ -44,9 +44,10 @@ INSTALL_DIR="$HOME/.local/share/koverlay"
 echo "Installing KOverlay to $INSTALL_DIR..."
 mkdir -p "$INSTALL_DIR"
 
-# Copy Python files and app icon
+# Copy Python files, requirements, and app icon
 cp *.py "$INSTALL_DIR/"
 cp icon.png "$INSTALL_DIR/"
+cp requirements.txt "$INSTALL_DIR/"
 
 echo "Installing icon sizes to /usr/share/icons/hicolor..."
 for size in 16 32 48 64 128 256 512; do
@@ -88,7 +89,7 @@ mkdir -p ~/.local/share/applications/
 # Generate desktop file dynamically with absolute path
 cat > ~/.local/share/applications/koverlay.desktop << EOL
 [Desktop Entry]
-Version=0.1.13
+Version=0.1.13-2
 Type=Application
 Name=KOverlay
 Comment=KOverlay - TS3 Overlay

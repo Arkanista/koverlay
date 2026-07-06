@@ -64,6 +64,7 @@ class MainApp:
         
         # Migrate legacy config to overlay_ids dictionary
         if "overlay_ids" not in self.cfg:
+            self.cfg["overlay_ids"] = {}
             primary_screen = self.app.primaryScreen()
             
             # Map existing monitors config if available
