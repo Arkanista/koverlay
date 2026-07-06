@@ -20,6 +20,15 @@ Welcome to **KOverlay** – a powerful, modern overlay for Linux (X11 and Waylan
 
 KOverlay supports major Linux distributions natively and provides automated tools for deployment.
 
+### Step 0: Clone the Repository
+Before installing from source or using the installer script, clone the repository and navigate into it:
+```bash
+git clone https://github.com/Arkanista/KOverlay.git
+cd KOverlay
+```
+
+Choose the appropriate installation method for your distribution below.
+
 ### Arch Linux / CachyOS / Manjaro / Garuda Linux
 
 For Arch-based systems, an official `PKGBUILD` and a pre-compiled package are provided for clean system integration.
