@@ -9,16 +9,16 @@ echo "Starting KOverlay installation..."
 if command -v apt &> /dev/null; then
     echo "Detected apt (Debian/Ubuntu/Mint)..."
     sudo apt update
-    sudo apt install -y python3 python3-venv python3-pip mpv
+    sudo apt install -y python3 python3-venv python3-pip mpv xdotool
 elif command -v pacman &> /dev/null; then
     echo "Detected pacman (Arch/Manjaro/CachyOS)..."
-    sudo pacman -Sy --needed python python-pip mpv
+    sudo pacman -Sy --needed python python-pip mpv xdotool
 elif command -v dnf &> /dev/null; then
     echo "Detected dnf (Fedora)..."
-    sudo dnf install -y python3 python3-pip mpv
+    sudo dnf install -y python3 python3-pip mpv xdotool
 elif command -v zypper &> /dev/null; then
     echo "Detected zypper (openSUSE)..."
-    sudo zypper install -y python3 python3-pip mpv
+    sudo zypper install -y python3 python3-pip mpv xdotool
 else
     echo "Unsupported package manager. Please install python3, python3-venv, pip, and mpv manually."
 fi
