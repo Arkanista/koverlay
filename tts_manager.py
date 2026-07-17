@@ -164,14 +164,14 @@ class TTSManager:
                     asyncio.run(communicate.save(tmp_file))
                     
                 # Use subprocess.run to BLOCK until mpv finishes playing the audio
-                # Added silenceremove filter to strip generated silence at start and end
+                # Added silenceremove filter to strip generated silence at the end
                 subprocess.run([
                     "mpv", 
                     "--no-video", 
                     "--no-terminal", 
                     f"--volume={vol}", 
                     # Using -70dB to prevent clipping the soft attack of the first consonant
-                    "--af=silenceremove=start_periods=1:start_duration=0:start_threshold=-70dB,silenceremove=stop_periods=-1:stop_duration=0:stop_threshold=-70dB",
+                    "--af=silenceremove=stop_periods=-1:stop_duration=0:stop_threshold=-70dB",
                     tmp_file
                 ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             except Exception as e:

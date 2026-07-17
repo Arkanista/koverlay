@@ -2,7 +2,7 @@
 > ✨ *Entirely vibecoded by Gemini 3.1 Pro AI agent* ✨
 
 > [!CAUTION]
-> **Important Update (v0.1.13-2):**
+> **Important Update (v0.1.13-3):**
 > The universal installer (`install.sh`), Pacman package, and configuration guides have been fully fixed!
 > The following automated validation tests were successfully conducted:
 > - **Arch Linux**: Rebuilt Pacman package (`makepkg -f`) and verified system-wide execution.
@@ -50,16 +50,16 @@ Building from source automatically handles dependency resolution, including AUR 
 
 #### Method B: Install the Pre-compiled Pacman Package
 1. Download the pre-compiled package from GitHub releases:
-   👉 **[Download KOverlay v0.1.13-2 (.pkg.tar.zst)](https://github.com/Arkanista/koverlay/releases/download/v0.1.13-2/koverlay-0.1.13-2-any.pkg.tar.zst)**
+   👉 **[Download KOverlay v0.1.13-3 (.pkg.tar.zst)](https://github.com/Arkanista/koverlay/releases/download/v0.1.13-3/koverlay-0.1.13-3-any.pkg.tar.zst)**
 2. **Important Note on Dependencies**: The package depends on `kdotool` (which is in the AUR). Standard `pacman` cannot automatically resolve or download AUR dependencies. You must install `kdotool` first:
    ```bash
    yay -S kdotool   # or: paru -S kdotool
    ```
 3. Install the downloaded package:
    ```bash
-   sudo pacman -U koverlay-0.1.13-2-any.pkg.tar.zst
+   sudo pacman -U koverlay-0.1.13-3-any.pkg.tar.zst
    # Alternatively, let your AUR helper resolve dependencies and install the local package:
-   yay -U koverlay-0.1.13-2-any.pkg.tar.zst
+   yay -U koverlay-0.1.13-3-any.pkg.tar.zst
    ```
 
 ### Ubuntu / Debian / Linux Mint / Pop!_OS / Fedora / Nobara / openSUSE
